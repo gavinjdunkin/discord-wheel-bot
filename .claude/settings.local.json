@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm info:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('keywords',[]\\)\\)\\); print\\('main:', d.get\\('main'\\)\\); print\\('type:', d.get\\('type','commonjs'\\)\\)\")",
+      "Bash(node:*)"
+    ]
+  }
+}

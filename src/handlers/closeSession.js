@@ -1,23 +1,15 @@
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import { sessions, weightedRandom } from '../data/store.js';
+import { generateWheelGif } from '../utils/wheelGif.js';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-function randomPick(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
 
 function buildBar(tickets, maxTickets, barWidth = 12) {
   const filled = Math.round((tickets / maxTickets) * barWidth);
   return '█'.repeat(filled) + '░'.repeat(barWidth - filled);
 }
 
-function spinningEmbed(gameName) {
-  return new EmbedBuilder()
-    .setTitle('🎰 Spinning...')
-    .setDescription(`## ${gameName}`)
-    .setColor(0xEB459E);
-}
 
 function resultEmbed(winner, ticketsMap, session) {
   const sorted = [...ticketsMap.entries()]
@@ -87,21 +79,46 @@ export async function closeSession(guildId, client) {
   const winnerId = weightedRandom(votedTickets);
   const winner = session.games.find(g => g.id === winnerId);
 
-  // Animated spin — slot machine effect
-  const spinMsg = await channel.send({ embeds: [spinningEmbed('...')] });
+  // Start GIF generation immediately — runs while suspense plays out
+  const gifBuffer = generateWheelGif(votedTickets, session.games, winnerId);
 
-  // Phase 1: fast (10 frames × 120ms)
-  for (let i = 0; i < 10; i++) {
-    await spinMsg.edit({ embeds: [spinningEmbed(randomPick(session.games).name)] });
-    await sleep(120);
+  // Suspense phase — typing indicator + a few slow message edits (rate-limit safe)
+  const spinMsg = await channel.send({
+    embeds: [new EmbedBuilder()
+      .setTitle('🎰 Spinning the wheel...')
+      .setDescription('Tallying votes...')
+      .setColor(0xEB459E)],
+  });
+
+  await channel.sendTyping();
+  await sleep(3000);
+  await channel.sendTyping();
+
+  const candidates = [...session.games].sort(() => Math.random() - 0.5).slice(0, 3);
+  for (const game of candidates) {
+    await spinMsg.edit({
+      embeds: [new EmbedBuilder()
+        .setTitle('🎰 Spinning...')
+        .setDescription(`## ${game.name}`)
+        .setColor(0xEB459E)],
+    });
+    await sleep(1500);
   }
 
-  // Phase 2: slowing down
-  for (const delay of [200, 250, 300, 350, 400, 450]) {
-    await spinMsg.edit({ embeds: [spinningEmbed(randomPick(session.games).name)] });
-    await sleep(delay);
-  }
+  await spinMsg.edit({
+    embeds: [new EmbedBuilder()
+      .setTitle('🎰 And the winner is...')
+      .setDescription('##  ')
+      .setColor(0xEB459E)],
+  });
+  await sleep(1500);
 
-  // Final reveal
-  await spinMsg.edit({ embeds: [resultEmbed(winner, votedTickets, session)] });
+  // Delete the placeholder and post the GIF + result embed
+  await spinMsg.delete().catch(() => {});
+
+  const attachment = new AttachmentBuilder(gifBuffer, { name: 'wheel.gif' });
+  await channel.send({
+    files: [attachment],
+    embeds: [resultEmbed(winner, votedTickets, session).setImage('attachment://wheel.gif')],
+  });
 }

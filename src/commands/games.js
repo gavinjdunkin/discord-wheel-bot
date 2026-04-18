@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { v4 as uuidv4 } from 'uuid';
 import { loadGames, saveGames } from '../data/store.js';
 import { isAdmin } from '../utils/guards.js';
@@ -40,28 +40,28 @@ export async function execute(interaction) {
   if (sub === 'list') {
     const games = loadGames();
     if (!games.length) {
-      return interaction.reply({ content: 'No games added yet. Use `/games add` to get started.', ephemeral: true });
+      return interaction.reply({ content: 'No games added yet. Use `/games add` to get started.', flags: MessageFlags.Ephemeral });
     }
     const list = games.map((g, i) => `${i + 1}. ${g.name}`).join('\n');
-    return interaction.reply({ content: `**Games (${games.length})**\n${list}`, ephemeral: true });
+    return interaction.reply({ content: `**Games (${games.length})**\n${list}`, flags: MessageFlags.Ephemeral });
   }
 
   if (!isAdmin(interaction)) {
-    return interaction.reply({ content: 'You need admin permissions to manage games.', ephemeral: true });
+    return interaction.reply({ content: 'You need admin permissions to manage games.', flags: MessageFlags.Ephemeral });
   }
 
   if (sub === 'add') {
     const name = interaction.options.getString('name').trim();
     const games = loadGames();
     if (games.length >= 25) {
-      return interaction.reply({ content: 'The game list is full (max 25). Remove a game first.', ephemeral: true });
+      return interaction.reply({ content: 'The game list is full (max 25). Remove a game first.', flags: MessageFlags.Ephemeral });
     }
     if (games.some(g => g.name.toLowerCase() === name.toLowerCase())) {
-      return interaction.reply({ content: `**${name}** is already on the list.`, ephemeral: true });
+      return interaction.reply({ content: `**${name}** is already on the list.`, flags: MessageFlags.Ephemeral });
     }
     games.push({ id: uuidv4(), name });
     saveGames(games);
-    return interaction.reply({ content: `Added **${name}** to the list.`, ephemeral: true });
+    return interaction.reply({ content: `Added **${name}** to the list.`, flags: MessageFlags.Ephemeral });
   }
 
   if (sub === 'remove') {
@@ -69,10 +69,10 @@ export async function execute(interaction) {
     const games = loadGames();
     const idx = games.findIndex(g => g.name.toLowerCase() === name.toLowerCase());
     if (idx === -1) {
-      return interaction.reply({ content: `Couldn't find **${name}** on the list.`, ephemeral: true });
+      return interaction.reply({ content: `Couldn't find **${name}** on the list.`, flags: MessageFlags.Ephemeral });
     }
     games.splice(idx, 1);
     saveGames(games);
-    return interaction.reply({ content: `Removed **${name}** from the list.`, ephemeral: true });
+    return interaction.reply({ content: `Removed **${name}** from the list.`, flags: MessageFlags.Ephemeral });
   }
 }

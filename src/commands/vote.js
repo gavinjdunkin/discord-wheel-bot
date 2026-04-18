@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { sessions } from '../data/store.js';
 
 export const data = new SlashCommandBuilder()
@@ -44,7 +44,7 @@ export async function execute(interaction) {
   const session = sessions.get(guildId);
 
   if (!session || session.closed) {
-    return interaction.reply({ content: 'No voting session is active right now.', ephemeral: true });
+    return interaction.reply({ content: 'No voting session is active right now.', flags: MessageFlags.Ephemeral });
   }
 
   const firstName = interaction.options.getString('first');
@@ -56,23 +56,23 @@ export async function execute(interaction) {
 
   const first = resolve(firstName);
   if (!first) {
-    return interaction.reply({ content: `Couldn't find **${firstName}** in the game list.`, ephemeral: true });
+    return interaction.reply({ content: `Couldn't find **${firstName}** in the game list.`, flags: MessageFlags.Ephemeral });
   }
 
   const second = secondName ? resolve(secondName) : null;
   if (secondName && !second) {
-    return interaction.reply({ content: `Couldn't find **${secondName}** in the game list.`, ephemeral: true });
+    return interaction.reply({ content: `Couldn't find **${secondName}** in the game list.`, flags: MessageFlags.Ephemeral });
   }
 
   const third = thirdName ? resolve(thirdName) : null;
   if (thirdName && !third) {
-    return interaction.reply({ content: `Couldn't find **${thirdName}** in the game list.`, ephemeral: true });
+    return interaction.reply({ content: `Couldn't find **${thirdName}** in the game list.`, flags: MessageFlags.Ephemeral });
   }
 
   // Validate no duplicates
   const picks = [first?.id, second?.id, third?.id].filter(Boolean);
   if (new Set(picks).size !== picks.length) {
-    return interaction.reply({ content: "You can't pick the same game more than once.", ephemeral: true });
+    return interaction.reply({ content: "You can't pick the same game more than once.", flags: MessageFlags.Ephemeral });
   }
 
   const isUpdate = session.votes.has(interaction.user.id);
@@ -90,6 +90,6 @@ export async function execute(interaction) {
 
   await interaction.reply({
     content: `${isUpdate ? 'Vote updated!' : 'Vote recorded!'}  ${summary}`,
-    ephemeral: true,
+    flags: MessageFlags.Ephemeral,
   });
 }

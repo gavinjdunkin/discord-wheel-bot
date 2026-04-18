@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from 'discord.js';
 import { loadGames, sessions } from '../data/store.js';
 import { isAdmin } from '../utils/guards.js';
 
@@ -8,17 +8,17 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
   if (!isAdmin(interaction)) {
-    return interaction.reply({ content: 'You need admin permissions to start a spin.', ephemeral: true });
+    return interaction.reply({ content: 'You need admin permissions to start a spin.', flags: MessageFlags.Ephemeral });
   }
 
   const guildId = interaction.guildId;
   if (sessions.has(guildId)) {
-    return interaction.reply({ content: 'A voting session is already active. Use `/close` to end it.', ephemeral: true });
+    return interaction.reply({ content: 'A voting session is already active. Use `/close` to end it.', flags: MessageFlags.Ephemeral });
   }
 
   const games = loadGames();
   if (games.length < 2) {
-    return interaction.reply({ content: 'Add at least 2 games with `/games add` before spinning.', ephemeral: true });
+    return interaction.reply({ content: 'Add at least 2 games with `/games add` before spinning.', flags: MessageFlags.Ephemeral });
   }
 
   const gameList = games.map((g, i) => `${i + 1}. ${g.name}`).join('\n');

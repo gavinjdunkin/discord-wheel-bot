@@ -1,6 +1,6 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 import { sessions, weightedRandom } from '../data/store.js';
-import { generateWheelGif } from '../utils/wheelGif.js';
+import { generateWheelGif, GIF_DURATION_MS } from '../utils/wheelGif.js';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -79,46 +79,23 @@ export async function closeSession(guildId, client) {
   const winnerId = weightedRandom(votedTickets);
   const winner = session.games.find(g => g.id === winnerId);
 
-  // Start GIF generation immediately — runs while suspense plays out
   const gifBuffer = generateWheelGif(votedTickets, session.games, winnerId);
 
-  // Suspense phase — typing indicator + a few slow message edits (rate-limit safe)
-  const spinMsg = await channel.send({
-    embeds: [new EmbedBuilder()
-      .setTitle('🎰 Spinning the wheel...')
-      .setDescription('Tallying votes...')
-      .setColor(0xEB459E)],
-  });
-
-  await channel.sendTyping();
-  await sleep(3000);
-  await channel.sendTyping();
-
-  const candidates = [...session.games].sort(() => Math.random() - 0.5).slice(0, 3);
-  for (const game of candidates) {
-    await spinMsg.edit({
-      embeds: [new EmbedBuilder()
-        .setTitle('🎰 Spinning...')
-        .setDescription(`## ${game.name}`)
-        .setColor(0xEB459E)],
-    });
-    await sleep(1500);
-  }
-
-  await spinMsg.edit({
-    embeds: [new EmbedBuilder()
-      .setTitle('🎰 And the winner is...')
-      .setDescription('##  ')
-      .setColor(0xEB459E)],
-  });
-  await sleep(1500);
-
-  // Delete the placeholder and post the GIF + result embed
-  await spinMsg.delete().catch(() => {});
-
+  // Post the GIF with a blank placeholder — results hidden until the spin finishes
   const attachment = new AttachmentBuilder(gifBuffer, { name: 'wheel.gif' });
-  await channel.send({
+  const msg = await channel.send({
     files: [attachment],
+    embeds: [
+      new EmbedBuilder()
+        .setTitle('🎰 Spinning...')
+        .setImage('attachment://wheel.gif')
+        .setColor(0xEB459E),
+    ],
+  });
+
+  // Wait for the GIF to finish, then reveal results
+  await sleep(GIF_DURATION_MS);
+  await msg.edit({
     embeds: [resultEmbed(winner, votedTickets, session).setImage('attachment://wheel.gif')],
   });
 }

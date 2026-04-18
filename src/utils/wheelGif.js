@@ -12,6 +12,9 @@ const N_SPINS = 12;
 const FAST_FRAMES = 35;
 const FAST_DELAY = 85;       // ms — fast phase (~3s total)
 const SLOW_DELAY = 350;      // ms — slow phase (~7s total) → ~10s total
+
+export const GIF_DURATION_MS =
+  FAST_FRAMES * FAST_DELAY + (TOTAL_FRAMES - FAST_FRAMES) * SLOW_DELAY;
 const FONT_SIZE = 11;
 const MAX_LABEL_CHARS = 14;
 

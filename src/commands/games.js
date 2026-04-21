@@ -46,10 +46,6 @@ export async function execute(interaction) {
     return interaction.reply({ content: `**Games (${games.length})**\n${list}`, flags: MessageFlags.Ephemeral });
   }
 
-  if (!isAdmin(interaction)) {
-    return interaction.reply({ content: 'You need admin permissions to manage games.', flags: MessageFlags.Ephemeral });
-  }
-
   if (sub === 'add') {
     const name = interaction.options.getString('name').trim();
     const games = loadGames();
@@ -65,6 +61,9 @@ export async function execute(interaction) {
   }
 
   if (sub === 'remove') {
+    if (!isAdmin(interaction)) {
+      return interaction.reply({ content: 'You need admin permissions to remove games.', flags: MessageFlags.Ephemeral });
+    }
     const name = interaction.options.getString('name').trim();
     const games = loadGames();
     const idx = games.findIndex(g => g.name.toLowerCase() === name.toLowerCase());
